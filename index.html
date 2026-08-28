@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ប្រព័ន្ធស្កេនវត្តមាន (NPIC)</title>
+    <link href="https://fonts.googleapis.com/css?family=Khmer+OS+Siemreap&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #2f4e7d; font-family: 'Khmer OS Siemreap', sans-serif; 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box;
+        }
+        .card { 
+            background-color: white; border-radius: 20px; padding: 30px; 
+            width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; 
+        }
+        h4 { color: #2f4e7d; margin: 0 0 5px 0; font-size: 16px; font-weight: normal; }
+        h2 { color: #2f4e7d; margin: 0 0 15px 0; font-size: 24px; }
+        .clock { font-size: 32px; color: #e74c3c; font-weight: bold; margin-bottom: 10px; }
+        .location-status { font-size: 14px; color: #27ae60; margin-bottom: 20px; font-weight: bold; }
+        
+        .row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .input-group { flex: 1; text-align: left; margin-bottom: 15px; }
+        .input-group.full { width: 100%; margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 14px; color: #555; margin-bottom: 8px; }
+        
+        select, input { 
+            width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; 
+            font-family: 'Khmer OS Siemreap', sans-serif; font-size: 15px; outline: none; box-sizing: border-box;
+        }
+        select:focus, input:focus { border-color: #2f4e7d; }
+        
+        /* រចនាប្រអប់ឈ្មោះឱ្យមើលទៅស្រស់ស្អាត មិនឱ្យចុចវាយបាន */
+        .readonly-input { background-color: #e9ecef; font-weight: bold; color: #2f4e7d; border: 1px solid #bdc3c7; }
+        
+        .btn-submit { 
+            background-color: #2f4e7d; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; 
+            font-size: 18px; font-weight: bold; font-family: 'Khmer OS Siemreap', sans-serif; cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        .btn-submit:disabled { background-color: #95a5a6; cursor: not-allowed; }
+        .btn-submit:hover:not(:disabled) { background-color: #1f365c; }
+        
+        .error-msg { color: #e74c3c; margin-top: 15px; font-weight: bold; display: none; font-size: 15px; }
+        .success-msg { color: #27ae60; margin-top: 15px; font-weight: bold; display: none; font-size: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h4>វិទ្យាស្ថានជាតិពហុបច្ចេកទេសកម្ពុជា</h4>
+        <h2>ស្កេនវត្តមាន (Student)</h2>
+        
+        <div class="clock" id="liveClock">00:00:00 PM</div>
+        <div class="location-status" id="locationStatus">⏳ កំពុងពិនិត្យទីតាំង...</div>
+
+        <div class="row">
+            <div class="input-group">
+                <label>ឆ្នាំ (Year)</label>
+                <select id="studentYear">
+                    <option value="Year 1">ឆ្នាំទី ១</option>
+                    <option value="Year 2">ឆ្នាំទី ២</option>
+                    <option value="Year 3" selected>ឆ្នាំទី ៣</option>
+                    <option value="Year 4">ឆ្នាំទី ៤</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>ក្រុម (Group)</label>
+                <select id="studentGroup">
+                    <option value="B.EcE.A" selected>B.EcE.A</option>
+                    <option value="B.EcE.B">B.EcE.B</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="input-group full">
+            <label>មុខវិជ្ជា (Subject)</label>
+            <select id="studentClass"><option value="" disabled selected>⏳ កំពុងទាញយកមុខវិជ្ជា...</option></select>
+        </div>
+
+        <!-- មុខងារថ្មី៖ បំបែកប្រអប់វាយលេខ និង លោតឈ្មោះអូតូ -->
+        <div class="row" style="margin-bottom: 0;">
+            <div class="input-group" style="flex: 0.6;">
+                <label>លេខ (ID)</label>
+                <input type="number" id="studentID" placeholder="ឧ. 1" oninput="autoFillName()" required>
+            </div>
+            <div class="input-group" style="flex: 1.4;">
+                <label>ឈ្មោះសិស្ស (Name)</label>
+                <input type="text" id="studentName" class="readonly-input" placeholder="ឈ្មោះនឹងលោតអូតូ..." readonly>
+            </div>
+        </div>
+
+        <div class="input-group full">
+            <label>ចំណាំ (Note) - មិនចាំបាច់ក៏បាន</label>
+            <input type="text" id="studentNote" placeholder="ឧទាហរណ៍៖ មកយឺតដោយសារភ្លៀង">
+        </div>
+
+        <button class="btn-submit" id="btnSubmit" onclick="submitAttendance()" disabled>ស្កេនវត្តមានឥឡូវនេះ</button>
+        <div class="error-msg" id="errorMsg">⏳ កំពុងពិនិត្យទីតាំង GPS...</div>
+        <div class="success-msg" id="successMsg">✅ វត្តមានត្រូវបានកត់ត្រា!</div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby39WkYdxnf64jL95NiO5_2fu4XbgwA_a2O63i4O_SzKRa5gC9aZqSvLsaFBFYZGxIcow/exec";
+        
+        let currentMethod = "Web App";
+        let isLocationValid = false; 
+        let studentDataDict = {}; // ផ្ទុកទិន្នន័យឈ្មោះសិស្សដែលទាញពី Google Sheets
+
+        const NPIC_LAT = 11.5780; 
+        const NPIC_LNG = 104.8112; 
+        const MAX_DISTANCE_KM = 5.0; 
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('method') === 'NFC') { currentMethod = "NFC"; }
+
+            fetchClasses();
+            fetchStudents(); // ហៅមុខងារទាញយកឈ្មោះសិស្ស
+            checkLocation(); 
+            startClock();    
+        };
+
+        // មុខងារទាញយកឈ្មោះសិស្សពី Google Sheets ទុកជាមុន
+        function fetchStudents() {
+            fetch(GOOGLE_SCRIPT_URL + "?action=getStudents")
+                .then(response => response.json())
+                .then(data => { studentDataDict = data; })
+                .catch(error => console.log("Error fetching students: ", error));
+        }
+
+        // មុខងារ Auto-Fill លោតឈ្មោះអូតូ ពេលសិស្សវាយលេខ ID
+        function autoFillName() {
+            const id = document.getElementById("studentID").value.trim();
+            const nameInput = document.getElementById("studentName");
+            
+            if (id && studentDataDict[id]) {
+                nameInput.value = studentDataDict[id]; // បើត្រូវលេខ ឱ្យលោតឈ្មោះ
+            } else {
+                nameInput.value = ""; // បើខុសលេខ ឱ្យទុកចន្លោះទទេ
+            }
+        }
+
+        function checkLocation() {
+            const statusEl = document.getElementById("locationStatus");
+            statusEl.innerHTML = "⏳ កំពុងទាញយកទីតាំង GPS របស់អ្នក..."; statusEl.style.color = "#f39c12";
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLat = position.coords.latitude, userLng = position.coords.longitude;
+                        const R = 6371; 
+                        const dLat = (userLat - NPIC_LAT) * Math.PI / 180, dLng = (userLng - NPIC_LNG) * Math.PI / 180;
+                        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(NPIC_LAT * Math.PI / 180) * Math.cos(userLat * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
+                        const distance = R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); 
+
+                        if (distance <= MAX_DISTANCE_KM) {
+                            statusEl.innerHTML = `✅ ទីតាំងត្រឹមត្រូវ (ចម្ងាយ: ${distance.toFixed(2)}Km)`; statusEl.style.color = "#27ae60"; isLocationValid = true;
+                        } else {
+                            statusEl.innerHTML = `❌ អ្នកនៅក្រៅសាលា (ចម្ងាយ: ${distance.toFixed(2)}Km)`; statusEl.style.color = "#e74c3c"; isLocationValid = false;
+                        }
+                    },
+                    (error) => { statusEl.innerHTML = "⚠️ សូមបើក GPS រួច Refresh ឡើងវិញ!"; statusEl.style.color = "#e74c3c"; isLocationValid = false; },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            } else { statusEl.innerHTML = "⚠️ ទូរស័ព្ទមិនគាំទ្រ GPS!"; statusEl.style.color = "#e74c3c"; isLocationValid = false; }
+        }
+
+        function startClock() {
+            setInterval(() => {
+                const now = new Date(); document.getElementById('liveClock').innerHTML = now.toLocaleTimeString('en-US', { hour12: true });
+                const hour = now.getHours(), btn = document.getElementById("btnSubmit"), errorMsg = document.getElementById("errorMsg");
+
+                if (hour >= 6 && hour < 18 && isLocationValid) { btn.disabled = false; errorMsg.style.display = "none"; } 
+                else if (!isLocationValid) { btn.disabled = true; errorMsg.style.display = "block"; errorMsg.innerHTML = "❌ អ្នកត្រូវតែនៅជិតសាលា (ក្នុងរង្វង់ ៥គីឡូម៉ែត្រ)!"; } 
+                else { btn.disabled = true; errorMsg.style.display = "block"; errorMsg.innerHTML = "❌ ហួសម៉ោងស្កេនវត្តមានហើយ!"; }
+            }, 1000);
+        }
+
+        function fetchClasses() {
+            const classDropdown = document.getElementById("studentClass");
+            fetch(GOOGLE_SCRIPT_URL + "?action=getClasses")
+                .then(response => response.json())
+                .then(data => {
+                    classDropdown.innerHTML = '<option value="" disabled selected>-- សូមជ្រើសរើសមុខវិជ្ជា --</option>';
+                    data.forEach(cls => { const option = document.createElement("option"); option.value = cls; option.text = cls; classDropdown.appendChild(option); });
+                })
+                .catch(error => { classDropdown.innerHTML = '<option value="" disabled selected>⚠️ បរាជ័យក្នុងការទាញយក</option>'; });
+        }
+
+        function submitAttendance() {
+            const year = document.getElementById("studentYear").value;
+            const group = document.getElementById("studentGroup").value;
+            const className = document.getElementById("studentClass").value;
+            const name = document.getElementById("studentName").value.trim(); // យកឈ្មោះពិតដែលលោតអូតូ
+            const note = document.getElementById("studentNote").value.trim();
+            
+            const btn = document.getElementById("btnSubmit"), errorMsg = document.getElementById("errorMsg"), successMsg = document.getElementById("successMsg");
+
+            if (!className) { errorMsg.innerHTML = "❌ សូមជ្រើសរើសមុខវិជ្ជាសិន!"; errorMsg.style.display = "block"; return; }
+            if (name === "") { errorMsg.innerHTML = "❌ លេខ ID មិនត្រឹមត្រូវ! រកមិនឃើញឈ្មោះសិស្សទេ។"; errorMsg.style.display = "block"; return; }
+
+            btn.disabled = true; btn.innerHTML = "⏳ កំពុងបញ្ជូនទិន្នន័យ..."; errorMsg.style.display = "none"; successMsg.style.display = "none";
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ source: "web_app", year: year, group: group, class_name: className, name: name, note: note, method: currentMethod })
+            })
+            .then(response => response.text())
+            .then(data => {
+                if (data.includes("Success")) {
+                    successMsg.innerHTML = "✅ វត្តមានត្រូវបានកត់ត្រាចូលប្រព័ន្ធជោគជ័យ!"; successMsg.style.display = "block";
+                    document.getElementById("studentID").value = ""; document.getElementById("studentName").value = ""; document.getElementById("studentNote").value = "";
+                } else if (data.includes("Already Scanned")) { errorMsg.innerHTML = "⚠️ អ្នកបានស្កេនវត្តមានរួចរាល់ហើយ!"; errorMsg.style.display = "block";
+                } else { errorMsg.innerHTML = "❌ បរាជ័យ៖ " + data; errorMsg.style.display = "block"; }
+            })
+            .catch(error => { errorMsg.innerHTML = "❌ បរាជ័យភ្ជាប់ប្រព័ន្ធ!"; errorMsg.style.display = "block"; })
+            .finally(() => { btn.disabled = false; btn.innerHTML = "ស្កេនវត្តមានឥឡូវនេះ"; });
+        }
+    </script>
+</body>
+</html>
