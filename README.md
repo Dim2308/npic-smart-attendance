@@ -28,7 +28,7 @@ A professional IoT-based smart attendance management system. It integrates ESP32
 
 ## 👨‍💻 Authors (រៀបចំដោយ)
 
-* **BEAV CHHUNLY** (បេវ ឈុនលី)
+* **BEAV CHHUNLY** (បៀវ ឈុនលី)
 * **SEN SEAKNANN** (សេន សៀកណាន់)
 * **MOM SEYAROW** (មុំ សិយ៉ារ៉ូ)
 
