@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NPIC Smart Attendance - Pro Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Khmer+OS+Siemreap&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --info: #0ea5e9;
+            --excel: #107c41;
+            --sheet: #0f9d58;
+            --danger: #ef4444;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Khmer OS Siemreap', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 30px; }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: var(--primary); font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+        .header p { color: var(--text-muted); font-size: 16px; margin-top: 8px; }
+        .badge-pro { background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; vertical-align: middle; margin-left: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Tabs Navigation */
+        .tabs-nav { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
+        .tab-btn { background-color: #e2e8f0; color: var(--text-muted); border: none; padding: 12px 25px; border-radius: 30px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
+        .tab-btn:hover { background-color: #cbd5e1; color: var(--text-main); }
+        .tab-btn.active { background-color: var(--primary); color: white; box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2); }
+        
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* KPI Cards */
+        .kpi-container { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+        .kpi-card { flex: 1; min-width: 200px; background: var(--card-bg); padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: center; border-left: 6px solid var(--primary); transition: transform 0.2s; }
+        .kpi-card:hover { transform: translateY(-3px); }
+        .kpi-card:nth-child(2) { border-color: var(--success); }
+        .kpi-card:nth-child(3) { border-color: var(--warning); }
+        .kpi-card:nth-child(4) { border-color: var(--info); }
+        .kpi-title { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-value { font-size: 36px; font-weight: 700; color: var(--text-main); }
+
+        /* Controls & Filters */
+        .controls-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 15px; flex-wrap: wrap; background: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .filter-group { display: flex; gap: 15px; flex: 1; flex-wrap: wrap; }
+        .search-box, .date-box { position: relative; flex: 1; min-width: 220px; }
+        input, select { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; transition: 0.3s; background-color: #f8fafc; color: var(--text-main); }
+        input:focus, select:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); background-color: #ffffff; }
+        
+        .action-group { display: flex; gap: 12px; flex-wrap: wrap; }
+        .btn { padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; color: white; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
+        .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-refresh { background-color: var(--primary); }
+        .btn-refresh:hover { background-color: #162865; }
+        .btn-excel { background-color: var(--excel); }
+        .btn-excel:hover { background-color: #0b5e31; }
+        .btn-sheet { background-color: var(--sheet); }
+        .btn-sheet:hover { background-color: #0b8043; }
+
+        /* Tables */
+        .table-card { background: var(--card-bg); border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #f1f5f9; }
+        .table-responsive { overflow-x: auto; max-height: 600px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        thead th { background-color: #f8fafc; color: var(--text-muted); padding: 16px 20px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #e2e8f0; }
+        tbody td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: var(--text-main); }
+        tbody tr:hover { background-color: #f8fafc; }
+        .student-name { font-weight: 600; color: var(--primary); }
+
+        .badge { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; text-align: center; min-width: 120px; }
+        .badge-ontime { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .badge-late { background-color: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+        .badge-checkout { background-color: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+        .badge-absent { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+        .loading-container { text-align: center; padding: 60px; display: none; }
+        .spinner { border: 4px solid #f1f5f9; border-top: 4px solid var(--primary); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Admin Management Grid */
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .admin-card { background: var(--card-bg); padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); }
+        .admin-card.delete-card { border-top-color: var(--danger); }
+        .admin-card.enroll-card { border-top-color: var(--success); }
+        .admin-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+        
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; color: var(--text-muted); font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+        .row-group { display: flex; gap: 15px; }
+        
+        .btn-block { width: 100%; justify-content: center; margin-top: 10px; padding: 14px; }
+        .btn-danger { background-color: var(--danger); }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .btn-success { background-color: var(--success); }
+        .btn-success:hover { background-color: #047857; }
+
+        .status-msg { margin-top: 15px; font-size: 13px; font-weight: 600; padding: 10px; border-radius: 8px; display: none; line-height: 1.5; }
+        .msg-success { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; } 
+        .msg-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .msg-warning { background-color: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>📊 Unified System Dashboard <span class="badge-pro">PRO</span></h1>
+        <p>Intelligent Attendance & Device Management Platform</p>
+    </div>
+
+    <!-- TABS NAVIGATION -->
+    <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('dashboardTab', this)">📊 Dashboard Analytics</button>
+        <button class="tab-btn" onclick="switchTab('adminTab', this)">⚙️ Device Management</button>
+    </div>
+
+    <!-- ================= TAB 1: DASHBOARD ================= -->
+    <div id="dashboardTab" class="tab-content active">
+        <div class="kpi-container">
+            <div class="kpi-card"><div class="kpi-title">Total Scanned</div><div class="kpi-value" id="kpiTotal">0</div></div>
+            <div class="kpi-card"><div class="kpi-title">On Time</div><div class="kpi-value" id="kpiOnTime" style="color: var(--success);">0</div></div>
+            <div class="kpi-card"><div class="kpi-title">Late</div><div class="kpi-value" id="kpiLate" style="color: var(--warning);">0</div></div>
+            <div class="kpi-card"><div class="kpi-title">Early Check-Out</div><div class="kpi-value" id="kpiCheckOut" style="color: var(--info);">0</div></div>
+        </div>
+
+        <div class="controls-container">
+            <div class="filter-group">
+                <div class="date-box"><input type="date" id="dateFilter" onchange="filterTable()" title="Select Date"></div>
+                <div class="search-box"><input type="text" id="searchInput" placeholder="🔍 Search student or subject..." onkeyup="filterTable()"></div>
+            </div>
+            
+            <div class="action-group">
+                <button class="btn btn-refresh" onclick="loadData()">🔄 Refresh</button>
+                <button class="btn btn-excel" onclick="exportToExcel()">📥 Export CSV</button>
+                <button class="btn btn-sheet" onclick="openGoogleSheet()">📝 Edit in Sheets</button>
+            </div>
+        </div>
+
+        <div class="loading-container" id="loadingView">
+            <div class="spinner"></div>
+            <p style="color: var(--primary); font-weight: 600;">Fetching data from Cloud Database...</p>
+        </div>
+
+        <div class="table-card" id="tableView">
+            <div class="table-responsive">
+                <table id="attendanceTable">
+                    <thead>
+                        <tr><th>Date</th><th>Time</th><th>Student Name</th><th>Subject</th><th style="text-align: center;">Status</th><th>Method</th></tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TAB 2: ADMIN MANAGEMENT ================= -->
+    <div id="adminTab" class="tab-content">
+        <div class="admin-grid">
+            
+            <!-- Card 1: Set Active Subject -->
+            <div class="admin-card">
+                <div class="admin-title" style="color: var(--primary);">📡 Set Active Subject (Scanner)</div>
+                <div class="input-group">
+                    <label>Select Subject</label>
+                    <select id="hardwareClass"><option value="" disabled selected>⏳ Fetching subjects...</option></select>
+                </div>
+                <button class="btn btn-refresh btn-block" id="btnSetHardware" onclick="setActiveHardwareClass()">Update Device Subject</button>
+                <div class="status-msg" id="hardwareStatus"></div>
+            </div>
+
+            <!-- Card 2: Add New Subject -->
+            <div class="admin-card">
+                <div class="admin-title" style="color: var(--info);">📚 Add New Subject</div>
+                <div class="input-group">
+                    <label>Subject Name</label>
+                    <input type="text" id="newClassName" placeholder="e.g. Mathematics 101">
+                </div>
+                <button class="btn btn-refresh btn-block" style="background-color: var(--info);" id="btnAddClass" onclick="addNewClass()">Save to Database</button>
+                <div class="status-msg" id="classStatus"></div>
+            </div>
+
+            <!-- Card 3: Enroll Fingerprint -->
+            <div class="admin-card enroll-card" style="grid-column: 1 / -1;">
+                <div class="admin-title" style="color: var(--success);">➕ Enroll New Fingerprint</div>
+                <div class="row-group">
+                    <div class="input-group" style="flex: 1;">
+                        <label>Academic Year</label>
+                        <select id="newYear"><option value="Year 1">Year 1</option><option value="Year 2">Year 2</option><option value="Year 3" selected>Year 3</option><option value="Year 4">Year 4</option></select>
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>Group</label>
+                        <select id="newGroup"><option value="B.EcE.A" selected>B.EcE.A</option><option value="B.EcE.B">B.EcE.B</option><option value="B.EcE.C">B.EcE.C</option></select>
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>Fingerprint ID (1-127)</label>
+                        <input type="number" id="newId" placeholder="e.g. 1">
+                    </div>
+                    <div class="input-group" style="flex: 2;">
+                        <label>Full Name</label>
+                        <input type="text" id="newName" placeholder="Student Name">
+                    </div>
+                </div>
+                <button class="btn btn-success btn-block" id="btnEnroll" onclick="startEnrollment()">Start Hardware Enrollment</button>
+                <div class="status-msg" id="enrollStatus"></div>
+            </div>
+
+            <!-- Card 4: Delete Fingerprint -->
+            <div class="admin-card delete-card">
+                <div class="admin-title" style="color: var(--danger);">🗑️ Delete Fingerprint</div>
+                <div class="input-group">
+                    <label>Fingerprint ID to Remove</label>
+                    <input type="number" id="deleteId" placeholder="Enter ID (1-127)">
+                </div>
+                <button class="btn btn-danger btn-block" onclick="startDelete()">Send Delete Command</button>
+                <div class="status-msg" id="deleteStatus"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ================= ការកំណត់ Link ទាំង ២ =================
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby39WkYdxnf64jL95NiO5_2fu4XbgwA_a2O63i4O_SzKRa5gC9aZqSvLsaFBFYZGxIcow/exec";
+        const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1vz3PxJqXReHt4jZiLYojqcwg52AeKy6gEyxmTCtEIJ8/edit?usp=sharing"; 
+        
+        // MQTT Connection
+        const mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+
+        // Tab Switching Logic
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // Initialize Data on Load
+        window.onload = function() {
+            loadData();
+            fetchClasses();
+        };
+
+        // ================= DASHBOARD FUNCTIONS =================
+        function openGoogleSheet() {
+            window.open(GOOGLE_SHEET_URL, '_blank');
+        }
+
+        function loadData() {
+            document.getElementById('loadingView').style.display = 'block';
+            document.getElementById('tableView').style.display = 'none';
+            
+            fetch(GOOGLE_SCRIPT_URL + "?action=getRecords")
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('tableBody');
+                    tbody.innerHTML = ''; 
+                    if(data.length > 0) data.shift(); 
+                    data.reverse(); 
+
+                    data.forEach(row => {
+                        if(row[0] === "") return; 
+                        const tr = document.createElement('tr');
+                        let statusText = String(row[6]).toUpperCase();
+                        let badgeClass = "badge-absent";
+                        let displayStatus = row[6];
+
+                        if (statusText.includes("ON TIME")) { badgeClass = "badge-ontime"; displayStatus = "ON TIME"; }
+                        else if (statusText.includes("LATE")) { badgeClass = "badge-late"; displayStatus = "LATE"; }
+                        else if (statusText.includes("CHECK-OUT")) { badgeClass = "badge-checkout"; displayStatus = "CHECK-OUT"; }
+
+                        let dateParts = row[0].split("/");
+                        let filterDate = dateParts.length === 3 ? `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}` : row[0];
+
+                        tr.setAttribute("data-date", filterDate);
+                        tr.innerHTML = `<td>${row[0]}</td><td>${row[1]}</td><td class="student-name">${row[5]}</td><td>${row[4]}</td><td style="text-align: center;"><span class="badge ${badgeClass}">${displayStatus}</span></td><td>${row[8]}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                    updateKPIs(); 
+                    document.getElementById('loadingView').style.display = 'none';
+                    document.getElementById('tableView').style.display = 'block';
+                }).catch(error => { document.getElementById('loadingView').innerHTML = '<p style="color: red; font-weight: 600;">❌ Failed to connect to server!</p>'; });
+        }
+
+        function filterTable() {
+            let searchInput = document.getElementById("searchInput").value.toUpperCase();
+            let dateInput = document.getElementById("dateFilter").value;
+            let tr = document.getElementById("attendanceTable").getElementsByTagName("tr");
+
+            for (let i = 1; i < tr.length; i++) {
+                let tdName = tr[i].getElementsByTagName("td")[2];
+                let tdSubject = tr[i].getElementsByTagName("td")[3];
+                let rowDate = tr[i].getAttribute("data-date");
+                let matchSearch = false, matchDate = false;
+
+                if (tdName || tdSubject) {
+                    let txtName = tdName.textContent || tdName.innerText;
+                    let txtSubject = tdSubject.textContent || tdSubject.innerText;
+                    if (txtName.toUpperCase().indexOf(searchInput) > -1 || txtSubject.toUpperCase().indexOf(searchInput) > -1) matchSearch = true;
+                }
+                if (dateInput === "" || rowDate === dateInput) matchDate = true;
+                tr[i].style.display = (matchSearch && matchDate) ? "" : "none";
+            }
+            updateKPIs(); 
+        }
+
+        function updateKPIs() {
+            let tr = document.getElementById("attendanceTable").getElementsByTagName("tr");
+            let cTotal = 0, cOnTime = 0, cLate = 0, cCheckOut = 0;
+            for (let i = 1; i < tr.length; i++) {
+                if (tr[i].style.display !== "none") {
+                    cTotal++;
+                    let statusText = tr[i].getElementsByTagName("td")[4].innerText.toUpperCase();
+                    if (statusText.includes("ON TIME")) cOnTime++;
+                    else if (statusText.includes("LATE")) cLate++;
+                    else if (statusText.includes("CHECK-OUT")) cCheckOut++;
+                }
+            }
+            document.getElementById('kpiTotal').innerText = cTotal;
+            document.getElementById('kpiOnTime').innerText = cOnTime;
+            document.getElementById('kpiLate').innerText = cLate;
+            document.getElementById('kpiCheckOut').innerText = cCheckOut;
+        }
+
+        function exportToExcel() {
+            let csv = [], rows = document.querySelectorAll("#attendanceTable tr");
+            for (let i = 0; i < rows.length; i++) {
+                if (rows[i].style.display !== "none") {
+                    let row = [], cols = rows[i].querySelectorAll("td, th");
+                    for (let j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/(\r\n|\n|\r)/gm, "").trim() + '"');
+                    csv.push(row.join(","));
+                }
+            }
+            let csvFile = new Blob(["\uFEFF" + csv.join("\n")], {type: "text/csv;charset=utf-8;"});
+            let downloadLink = document.createElement("a");
+            downloadLink.download = "Attendance_Report_" + new Date().toISOString().slice(0, 10) + ".csv";
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = "none";
+            document.body.appendChild(downloadLink); downloadLink.click(); document.body.removeChild(downloadLink);
+        }
+
+        // ================= ADMIN FUNCTIONS =================
+        function fetchClasses() {
+            var classDropdown = document.getElementById("hardwareClass");
+            fetch(GOOGLE_SCRIPT_URL + "?action=getClasses")
+                .then(response => response.json())
+                .then(data => {
+                    classDropdown.innerHTML = '<option value="" disabled selected>-- Select Subject --</option>';
+                    data.forEach(cls => {
+                        var option = document.createElement("option");
+                        option.value = cls; option.text = cls;
+                        classDropdown.appendChild(option);
+                    });
+                }).catch(error => { classDropdown.innerHTML = '<option value="" disabled selected>⚠️ Fetch Failed</option>'; });
+        }
+
+        function setActiveHardwareClass() {
+            var className = document.getElementById("hardwareClass").value;
+            var statusMsg = document.getElementById("hardwareStatus");
+            var btn = document.getElementById("btnSetHardware");
+
+            if (!className) { statusMsg.innerHTML = "❌ Select a subject first!"; statusMsg.className = "status-msg msg-error"; statusMsg.style.display = "block"; return; }
+            
+            btn.disabled = true; btn.innerHTML = "Sending..."; statusMsg.style.display = "none";
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ source: "admin_set_active_class", class_name: className }) })
+            .then(response => response.text())
+            .then(data => {
+                statusMsg.innerHTML = "✅ Device subject updated to <b>" + className + "</b>";
+                statusMsg.className = "status-msg msg-success"; statusMsg.style.display = "block";
+            }).finally(() => { btn.disabled = false; btn.innerHTML = "Update Device Subject"; });
+        }
+
+        function addNewClass() {
+            var className = document.getElementById("newClassName").value.trim();
+            var statusMsg = document.getElementById("classStatus");
+            var btn = document.getElementById("btnAddClass");
+            
+            if (className === "") { statusMsg.innerHTML = "❌ Enter a subject name!"; statusMsg.className = "status-msg msg-error"; statusMsg.style.display = "block"; return; }
+            
+            btn.disabled = true; btn.innerHTML = "Saving..."; statusMsg.style.display = "none";
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ source: "admin_add_class", class_name: className }) })
+            .then(response => response.text())
+            .then(data => {
+                if (data === "Success") {
+                    statusMsg.innerHTML = "✅ New subject added!"; statusMsg.className = "status-msg msg-success"; statusMsg.style.display = "block";
+                    document.getElementById("newClassName").value = ""; fetchClasses();
+                } else if (data === "Exist") {
+                    statusMsg.innerHTML = "⚠️ Subject already exists!"; statusMsg.className = "status-msg msg-warning"; statusMsg.style.display = "block";
+                }
+            }).finally(() => { btn.disabled = false; btn.innerHTML = "Save to Database"; });
+        }
+
+        function startEnrollment() {
+            var year = document.getElementById("newYear").value, group = document.getElementById("newGroup").value;
+            var id = document.getElementById("newId").value, name = document.getElementById("newName").value.trim();
+            var statusMsg = document.getElementById("enrollStatus"), btn = document.getElementById("btnEnroll");
+
+            if (id === "" || name === "") { statusMsg.innerHTML = "❌ Provide ID and Full Name!"; statusMsg.className = "status-msg msg-error"; statusMsg.style.display = "block"; return; }
+            
+            btn.disabled = true; btn.innerHTML = "Registering...";
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ source: "admin_enroll", id: id, name: name, year: year, group: group }) })
+            .then(response => response.text())
+            .then(data => {
+                mqttClient.publish('classroom/checkin', JSON.stringify({ cmd: "enroll", id: parseInt(id), name: name, year: year, group: group }));
+                statusMsg.innerHTML = "✅ Database saved!<br>⏳ Waiting for scanner input (2 times)...";
+                statusMsg.className = "status-msg msg-warning"; statusMsg.style.display = "block";
+                document.getElementById("newId").value = ""; document.getElementById("newName").value = "";
+            }).finally(() => { btn.disabled = false; btn.innerHTML = "Start Hardware Enrollment"; });
+        }
+
+        function startDelete() {
+            var id = document.getElementById("deleteId").value, statusMsg = document.getElementById("deleteStatus");
+            if (id === "") { statusMsg.innerHTML = "❌ Enter ID to delete!"; statusMsg.className = "status-msg msg-error"; statusMsg.style.display = "block"; return; }
+            
+            if(confirm("⚠️ Delete fingerprint ID " + id + " from hardware?")) {
+                mqttClient.publish('classroom/checkin', JSON.stringify({ cmd: "delete", id: parseInt(id) }));
+                statusMsg.innerHTML = "🗑️ Command sent to hardware!"; statusMsg.className = "status-msg msg-success"; statusMsg.style.display = "block";
+                document.getElementById("deleteId").value = "";
+            }
+        }
+    </script>
+</body>
+</html>`
