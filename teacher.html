@@ -38,9 +38,12 @@
         #loginError { color: var(--danger); font-size: 13px; font-weight: 600; margin-top: 15px; display: none; }
 
         /* Hide Main App Initially */
-        #mainApp { display: none; animation: fadeIn 0.5s ease-in-out; }
+        #mainApp { display: none; animation: fadeIn 0.5s ease-in-out; position: relative; }
 
-        .header { text-align: center; margin-bottom: 40px; }
+        .btn-logout { background-color: var(--danger); color: white; border: none; padding: 8px 15px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; position: absolute; top: 0; right: 0; transition: 0.3s; }
+        .btn-logout:hover { background-color: #b91c1c; }
+
+        .header { text-align: center; margin-bottom: 40px; padding-top: 10px; }
         .header h1 { color: var(--primary); font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
         .header p { color: var(--text-muted); font-size: 16px; margin-top: 8px; }
         .badge-pro { background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; vertical-align: middle; margin-left: 10px; text-transform: uppercase; letter-spacing: 1px; }
@@ -79,7 +82,6 @@
         .btn-excel:hover { background-color: #0b5e31; }
         .btn-sheet { background-color: var(--sheet); }
         .btn-sheet:hover { background-color: #0b8043; }
-        .btn-logout { background-color: var(--danger); padding: 8px 15px; font-size: 12px; position: absolute; top: 20px; right: 20px; }
 
         /* Tables */
         .table-card { background: var(--card-bg); border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #f1f5f9; }
@@ -115,21 +117,39 @@
         .msg-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         .msg-warning { background-color: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
 
+        /* ================= MOBILE RESPONSIVE FIX (កែសម្រួលថ្មី) ================= */
         @media (max-width: 768px) {
             body { padding: 15px; }
-            .header h1 { font-size: 24px; }
+            
+            /* ដោះស្រាយបញ្ហាប៊ូតុង Logout ត្រួតគ្នា */
+            .btn-logout {
+                position: relative; /* ដក Absolute ចេញ */
+                top: auto; right: auto;
+                display: block;
+                margin: 0 0 15px auto; /* រុញទៅស្តាំ និងទម្លាក់ចុះក្រោមបន្តិច */
+            }
+
+            /* បង្រួមចំណងជើងកុំឱ្យបែក */
+            .header { margin-top: 0; padding-top: 0; }
+            .header h1 { font-size: 20px; line-height: 1.4; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+            .badge-pro { margin-left: 0; }
+            
+            /* តម្រៀបប្រអប់ Enroll ជាជួរឈរវិញ */
             .row-group { flex-direction: column; gap: 12px; }
             .row-group .input-group { width: 100% !important; margin-bottom: 0; }
+            
+            /* តម្រៀបប៊ូតុងសកម្មភាព (Refresh, Excel, Sheets) */
             .action-group { flex-direction: column; width: 100%; }
             .action-group .btn { width: 100%; justify-content: center; }
-            .tabs-nav { flex-wrap: wrap; }
-            .tab-btn { flex: 1; min-width: 160px; justify-content: center; font-size: 14px; padding: 10px 15px; }
+            
+            /* តម្រៀបប៊ូតុង Tab ឱ្យបត់ចុះក្រោមងាយចុច */
+            .tabs-nav { flex-direction: column; gap: 10px; }
+            .tab-btn { width: 100%; justify-content: center; font-size: 14px; padding: 14px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- ================= LOGIN SCREEN ================= -->
     <div id="loginScreen">
         <div class="login-card">
             <div class="login-icon">🔒</div>
@@ -141,7 +161,6 @@
         </div>
     </div>
 
-    <!-- ================= MAIN APP (HIDDEN UNTIL LOGIN) ================= -->
     <div id="mainApp">
         <button class="btn btn-logout" onclick="logout()">🚪 Logout</button>
         
@@ -150,13 +169,11 @@
             <p>Intelligent Attendance & Device Management Platform</p>
         </div>
 
-        <!-- TABS NAVIGATION -->
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="switchTab('dashboardTab', this)">📊 Dashboard Analytics</button>
             <button class="tab-btn" onclick="switchTab('adminTab', this)">⚙️ Device Management</button>
         </div>
 
-        <!-- TAB 1: DASHBOARD -->
         <div id="dashboardTab" class="tab-content active">
             <div class="kpi-container">
                 <div class="kpi-card"><div class="kpi-title">Total Scanned</div><div class="kpi-value" id="kpiTotal">0</div></div>
@@ -195,7 +212,6 @@
             </div>
         </div>
 
-        <!-- TAB 2: ADMIN MANAGEMENT -->
         <div id="adminTab" class="tab-content">
             <div class="admin-grid">
                 <div class="admin-card">
@@ -257,10 +273,8 @@
 
     <script>
         // ================= SECURITY & LOGIN LOGIC =================
-        // 🟢 បងអាចប្តូរលេខសម្ងាត់ (Password) នៅត្រង់នេះ 🟢
-        const SYSTEM_PASSWORD = "1122"; 
+        const SYSTEM_PASSWORD = "1111"; 
         
-        // ពិនិត្យមើលថាតើធ្លាប់ Login ហើយឬនៅ ពេលបើកវិបសាយ
         window.onload = function() {
             if (sessionStorage.getItem("isLoggedIn") === "true") {
                 showMainApp();
@@ -274,7 +288,7 @@
         function checkLogin() {
             let pass = document.getElementById("sysPassword").value;
             if (pass === SYSTEM_PASSWORD) {
-                sessionStorage.setItem("isLoggedIn", "true"); // រក្សាទុកការ Login 
+                sessionStorage.setItem("isLoggedIn", "true"); 
                 showMainApp();
             } else {
                 document.getElementById("loginError").style.display = "block";
@@ -284,15 +298,13 @@
         function showMainApp() {
             document.getElementById("loginScreen").style.display = "none";
             document.getElementById("mainApp").style.display = "block";
-            
-            // ពេល Login ចូល ទើបទាញទិន្នន័យ (ចំណេញល្បឿនអ៊ីនធឺណិត)
             loadData();
             fetchClasses();
         }
 
         function logout() {
             sessionStorage.removeItem("isLoggedIn");
-            location.reload(); // Refresh ទំព័រ ដើម្បីលោតទៅផ្ទាំង Login វិញ
+            location.reload(); 
         }
 
         // ================= ការកំណត់ Link ទាំង ២ =================
@@ -332,155 +344,3 @@
                         if (statusText.includes("ON TIME")) { badgeClass = "badge-ontime"; displayStatus = "ON TIME"; }
                         else if (statusText.includes("LATE")) { badgeClass = "badge-late"; displayStatus = "LATE"; }
                         else if (statusText.includes("CHECK-OUT")) { badgeClass = "badge-checkout"; displayStatus = "CHECK-OUT"; }
-
-                        let dateParts = row[0].split("/");
-                        let filterDate = dateParts.length === 3 ? `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}` : row[0];
-
-                        tr.setAttribute("data-date", filterDate);
-                        tr.innerHTML = `<td>${row[0]}</td><td>${row[1]}</td><td class="student-name">${row[5]}</td><td>${row[4]}</td><td style="text-align: center;"><span class="badge ${badgeClass}">${displayStatus}</span></td><td>${row[8]}</td>`;
-                        tbody.appendChild(tr);
-                    });
-                    updateKPIs(); 
-                    document.getElementById('loadingView').style.display = 'none';
-                    document.getElementById('tableView').style.display = 'block';
-                }).catch(error => { document.getElementById('loadingView').innerHTML = '<p style="color: red; font-weight: 600;">❌ Failed to connect to server!</p>'; });
-        }
-
-        function filterTable() {
-            let searchInput = document.getElementById("searchInput").value.toUpperCase();
-            let dateInput = document.getElementById("dateFilter").value;
-            let tr = document.getElementById("attendanceTable").getElementsByTagName("tr");
-
-            for (let i = 1; i < tr.length; i++) {
-                let tdName = tr[i].getElementsByTagName("td")[2];
-                let tdSubject = tr[i].getElementsByTagName("td")[3];
-                let rowDate = tr[i].getAttribute("data-date");
-                let matchSearch = false, matchDate = false;
-
-                if (tdName || tdSubject) {
-                    let txtName = tdName.textContent || tdName.innerText;
-                    let txtSubject = tdSubject.textContent || tdSubject.innerText;
-                    if (txtName.toUpperCase().indexOf(searchInput) > -1 || txtSubject.toUpperCase().indexOf(searchInput) > -1) matchSearch = true;
-                }
-                if (dateInput === "" || rowDate === dateInput) matchDate = true;
-                tr[i].style.display = (matchSearch && matchDate) ? "" : "none";
-            }
-            updateKPIs(); 
-        }
-
-        function updateKPIs() {
-            let tr = document.getElementById("attendanceTable").getElementsByTagName("tr");
-            let cTotal = 0, cOnTime = 0, cLate = 0, cCheckOut = 0;
-            for (let i = 1; i < tr.length; i++) {
-                if (tr[i].style.display !== "none") {
-                    cTotal++;
-                    let statusText = tr[i].getElementsByTagName("td")[4].innerText.toUpperCase();
-                    if (statusText.includes("ON TIME")) cOnTime++;
-                    else if (statusText.includes("LATE")) cLate++;
-                    else if (statusText.includes("CHECK-OUT")) cCheckOut++;
-                }
-            }
-            document.getElementById('kpiTotal').innerText = cTotal;
-            document.getElementById('kpiOnTime').innerText = cOnTime;
-            document.getElementById('kpiLate').innerText = cLate;
-            document.getElementById('kpiCheckOut').innerText = cCheckOut;
-        }
-
-        function exportToExcel() {
-            let csv = [], rows = document.querySelectorAll("#attendanceTable tr");
-            for (let i = 0; i < rows.length; i++) {
-                if (rows[i].style.display !== "none") {
-                    let row = [], cols = rows[i].querySelectorAll("td, th");
-                    for (let j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/(\r\n|\n|\r)/gm, "").trim() + '"');
-                    csv.push(row.join(","));
-                }
-            }
-            let csvFile = new Blob(["\uFEFF" + csv.join("\n")], {type: "text/csv;charset=utf-8;"});
-            let downloadLink = document.createElement("a");
-            downloadLink.download = "Attendance_Report_" + new Date().toISOString().slice(0, 10) + ".csv";
-            downloadLink.href = window.URL.createObjectURL(csvFile);
-            downloadLink.style.display = "none";
-            document.body.appendChild(downloadLink); downloadLink.click(); document.body.removeChild(downloadLink);
-        }
-
-        function fetchClasses() {
-            var classDropdown = document.getElementById("hardwareClass");
-            fetch(GOOGLE_SCRIPT_URL + "?action=getClasses")
-                .then(response => response.json())
-                .then(data => {
-                    classDropdown.innerHTML = '<option value="" disabled selected>-- Select Subject --</option>';
-                    data.forEach(cls => {
-                        var option = document.createElement("option");
-                        option.value = cls; option.text = cls;
-                        classDropdown.appendChild(option);
-                    });
-                }).catch(error => { classDropdown.innerHTML = '<option value="" disabled selected>⚠️ Fetch Failed</option>'; });
-        }
-
-        function setActiveHardwareClass() {
-            var className = document.getElementById("hardwareClass").value;
-            var statusMsg = document.getElementById("hardwareStatus");
-            var btn = document.getElementById("btnSetHardware");
-
-            if (!className) { statusMsg.innerHTML = "❌ Select a subject first!"; statusMsg.className = "status-msg msg-error"; statusMsg.style.display = "block"; return; }
-            
-            btn.disabled = true; btn.innerHTML = "Sending..."; statusMsg.style.display = "none";
-            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ source: "admin_set_active_class", class_name: className }) })
-            .then(response => response.text())
-            .then(data => {
-                statusMsg.innerHTML = "✅ Device subject updated to <b>" + className + "</b>";
-                statusMsg.className = "status-msg msg-success"; statusMsg.style.display = "block";
-            }).finally(() => { btn.disabled = false; btn.innerHTML = "Update Device Subject"; });
-        }
-
-        function addNewClass() {
-            var className = document.getElementById("newClassName").value.trim();
-            var statusMsg = document.getElementById("classStatus");
-            var btn = document.getElementById("btnAddClass");
-            
-            if (className === "") { statusMsg.innerHTML = "❌ Enter a subject name!"; statusMsg.className = "status-msg msg-error"; statusMsg.style.display = "block"; return; }
-            
-            btn.disabled = true; btn.innerHTML = "Saving..."; statusMsg.style.display = "none";
-            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ source: "admin_add_class", class_name: className }) })
-            .then(response => response.text())
-            .then(data => {
-                if (data === "Success") {
-                    statusMsg.innerHTML = "✅ New subject added!"; statusMsg.className = "status-msg msg-success"; statusMsg.style.display = "block";
-                    document.getElementById("newClassName").value = ""; fetchClasses();
-                } else if (data === "Exist") {
-                    statusMsg.innerHTML = "⚠️ Subject already exists!"; statusMsg.className = "status-msg msg-warning"; statusMsg.style.display = "block";
-                }
-            }).finally(() => { btn.disabled = false; btn.innerHTML = "Save to Database"; });
-        }
-
-        function startEnrollment() {
-            var year = document.getElementById("newYear").value, group = document.getElementById("newGroup").value;
-            var id = document.getElementById("newId").value, name = document.getElementById("newName").value.trim();
-            var statusMsg = document.getElementById("enrollStatus"), btn = document.getElementById("btnEnroll");
-
-            if (id === "" || name === "") { statusMsg.innerHTML = "❌ Provide ID and Full Name!"; statusMsg.className = "status-msg msg-error"; statusMsg.style.display = "block"; return; }
-            
-            btn.disabled = true; btn.innerHTML = "Registering...";
-            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ source: "admin_enroll", id: id, name: name, year: year, group: group }) })
-            .then(response => response.text())
-            .then(data => {
-                mqttClient.publish('classroom/checkin', JSON.stringify({ cmd: "enroll", id: parseInt(id), name: name, year: year, group: group }));
-                statusMsg.innerHTML = "✅ Database saved!<br>⏳ Waiting for scanner input (2 times)...";
-                statusMsg.className = "status-msg msg-warning"; statusMsg.style.display = "block";
-                document.getElementById("newId").value = ""; document.getElementById("newName").value = "";
-            }).finally(() => { btn.disabled = false; btn.innerHTML = "Start Hardware Enrollment"; });
-        }
-
-        function startDelete() {
-            var id = document.getElementById("deleteId").value, statusMsg = document.getElementById("deleteStatus");
-            if (id === "") { statusMsg.innerHTML = "❌ Enter ID to delete!"; statusMsg.className = "status-msg msg-error"; statusMsg.style.display = "block"; return; }
-            
-            if(confirm("⚠️ Delete fingerprint ID " + id + " from hardware?")) {
-                mqttClient.publish('classroom/checkin', JSON.stringify({ cmd: "delete", id: parseInt(id) }));
-                statusMsg.innerHTML = "🗑️ Command sent to hardware!"; statusMsg.className = "status-msg msg-success"; statusMsg.style.display = "block";
-                document.getElementById("deleteId").value = "";
-            }
-        }
-    </script>
-</body>
-</html>
