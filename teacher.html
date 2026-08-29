@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NPIC Smart Attendance - Pro Edition</title>
+    <title>NPIC Smart Attendance - Secured</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Khmer+OS+Siemreap&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
@@ -25,6 +25,21 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Khmer OS Siemreap', sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-main); padding: 30px; }
 
+        /* ================= LOGIN SCREEN STYLES ================= */
+        #loginScreen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85vh; }
+        .login-card { background: var(--card-bg); padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center; border-top: 5px solid var(--primary); }
+        .login-icon { font-size: 50px; margin-bottom: 15px; }
+        .login-card h2 { color: var(--primary); margin-bottom: 10px; font-weight: 700; }
+        .login-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 25px; }
+        .login-card input { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 16px; margin-bottom: 15px; outline: none; text-align: center; letter-spacing: 2px; }
+        .login-card input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .btn-login { background-color: var(--primary); color: white; border: none; width: 100%; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .btn-login:hover { background-color: #162865; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2); }
+        #loginError { color: var(--danger); font-size: 13px; font-weight: 600; margin-top: 15px; display: none; }
+
+        /* Hide Main App Initially */
+        #mainApp { display: none; animation: fadeIn 0.5s ease-in-out; }
+
         .header { text-align: center; margin-bottom: 40px; }
         .header h1 { color: var(--primary); font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
         .header p { color: var(--text-muted); font-size: 16px; margin-top: 8px; }
@@ -35,7 +50,6 @@
         .tab-btn { background-color: #e2e8f0; color: var(--text-muted); border: none; padding: 12px 25px; border-radius: 30px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
         .tab-btn:hover { background-color: #cbd5e1; color: var(--text-main); }
         .tab-btn.active { background-color: var(--primary); color: white; box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2); }
-        
         .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -56,7 +70,6 @@
         .search-box, .date-box { position: relative; flex: 1; min-width: 220px; }
         input, select { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; transition: 0.3s; background-color: #f8fafc; color: var(--text-main); }
         input:focus, select:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); background-color: #ffffff; }
-        
         .action-group { display: flex; gap: 12px; flex-wrap: wrap; }
         .btn { padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; color: white; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
         .btn:disabled { opacity: 0.7; cursor: not-allowed; }
@@ -66,16 +79,16 @@
         .btn-excel:hover { background-color: #0b5e31; }
         .btn-sheet { background-color: var(--sheet); }
         .btn-sheet:hover { background-color: #0b8043; }
+        .btn-logout { background-color: var(--danger); padding: 8px 15px; font-size: 12px; position: absolute; top: 20px; right: 20px; }
 
         /* Tables */
         .table-card { background: var(--card-bg); border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #f1f5f9; }
         .table-responsive { overflow-x: auto; max-height: 600px; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
-        thead th { background-color: #f8fafc; color: var(--text-muted); padding: 16px 20px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #e2e8f0; }
-        tbody td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: var(--text-main); }
+        thead th { background-color: #f8fafc; color: var(--text-muted); padding: 16px 20px; font-size: 13px; font-weight: 700; text-transform: uppercase; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #e2e8f0; }
+        tbody td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
         tbody tr:hover { background-color: #f8fafc; }
         .student-name { font-weight: 600; color: var(--primary); }
-
         .badge { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; text-align: center; min-width: 120px; }
         .badge-ontime { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .badge-late { background-color: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
@@ -84,7 +97,6 @@
 
         .loading-container { text-align: center; padding: 60px; display: none; }
         .spinner { border: 4px solid #f1f5f9; border-top: 4px solid var(--primary); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Admin Management Grid */
         .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
@@ -92,36 +104,24 @@
         .admin-card.delete-card { border-top-color: var(--danger); }
         .admin-card.enroll-card { border-top-color: var(--success); }
         .admin-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
-        
         .input-group { margin-bottom: 15px; text-align: left; }
         .input-group label { display: block; color: var(--text-muted); font-size: 13px; font-weight: 600; margin-bottom: 6px; }
         .row-group { display: flex; gap: 15px; }
-        
         .btn-block { width: 100%; justify-content: center; margin-top: 10px; padding: 14px; }
         .btn-danger { background-color: var(--danger); }
-        .btn-danger:hover { background-color: #b91c1c; }
         .btn-success { background-color: var(--success); }
-        .btn-success:hover { background-color: #047857; }
-
         .status-msg { margin-top: 15px; font-size: 13px; font-weight: 600; padding: 10px; border-radius: 8px; display: none; line-height: 1.5; }
         .msg-success { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; } 
         .msg-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         .msg-warning { background-color: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
 
-        /* ================= MOBILE RESPONSIVE FIX ================= */
         @media (max-width: 768px) {
             body { padding: 15px; }
             .header h1 { font-size: 24px; }
-            
-            /* តម្រៀបប្រអប់ Enroll ជាជួរឈរវិញ */
             .row-group { flex-direction: column; gap: 12px; }
             .row-group .input-group { width: 100% !important; margin-bottom: 0; }
-            
-            /* តម្រៀបប៊ូតុងសកម្មភាព (Refresh, Excel, Sheets) */
             .action-group { flex-direction: column; width: 100%; }
             .action-group .btn { width: 100%; justify-content: center; }
-            
-            /* តម្រៀបប៊ូតុង Tab */
             .tabs-nav { flex-wrap: wrap; }
             .tab-btn { flex: 1; min-width: 160px; justify-content: center; font-size: 14px; padding: 10px 15px; }
         }
@@ -129,130 +129,178 @@
 </head>
 <body>
 
-    <div class="header">
-        <h1>📊 Unified System Dashboard <span class="badge-pro">PRO</span></h1>
-        <p>Intelligent Attendance & Device Management Platform</p>
-    </div>
-
-    <!-- TABS NAVIGATION -->
-    <div class="tabs-nav">
-        <button class="tab-btn active" onclick="switchTab('dashboardTab', this)">📊 Dashboard Analytics</button>
-        <button class="tab-btn" onclick="switchTab('adminTab', this)">⚙️ Device Management</button>
-    </div>
-
-    <!-- ================= TAB 1: DASHBOARD ================= -->
-    <div id="dashboardTab" class="tab-content active">
-        <div class="kpi-container">
-            <div class="kpi-card"><div class="kpi-title">Total Scanned</div><div class="kpi-value" id="kpiTotal">0</div></div>
-            <div class="kpi-card"><div class="kpi-title">On Time</div><div class="kpi-value" id="kpiOnTime" style="color: var(--success);">0</div></div>
-            <div class="kpi-card"><div class="kpi-title">Late</div><div class="kpi-value" id="kpiLate" style="color: var(--warning);">0</div></div>
-            <div class="kpi-card"><div class="kpi-title">Early Check-Out</div><div class="kpi-value" id="kpiCheckOut" style="color: var(--info);">0</div></div>
-        </div>
-
-        <div class="controls-container">
-            <div class="filter-group">
-                <div class="date-box"><input type="date" id="dateFilter" onchange="filterTable()" title="Select Date"></div>
-                <div class="search-box"><input type="text" id="searchInput" placeholder="🔍 Search student or subject..." onkeyup="filterTable()"></div>
-            </div>
-            
-            <div class="action-group">
-                <button class="btn btn-refresh" onclick="loadData()">🔄 Refresh</button>
-                <button class="btn btn-excel" onclick="exportToExcel()">📥 Export CSV</button>
-                <button class="btn btn-sheet" onclick="openGoogleSheet()">📝 Edit in Sheets</button>
-            </div>
-        </div>
-
-        <div class="loading-container" id="loadingView">
-            <div class="spinner"></div>
-            <p style="color: var(--primary); font-weight: 600;">Fetching data from Cloud Database...</p>
-        </div>
-
-        <div class="table-card" id="tableView">
-            <div class="table-responsive">
-                <table id="attendanceTable">
-                    <thead>
-                        <tr><th>Date</th><th>Time</th><th>Student Name</th><th>Subject</th><th style="text-align: center;">Status</th><th>Method</th></tr>
-                    </thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-            </div>
+    <!-- ================= LOGIN SCREEN ================= -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <div class="login-icon">🔒</div>
+            <h2>Admin Login</h2>
+            <p>Please enter the security password to access the system.</p>
+            <input type="password" id="sysPassword" placeholder="••••••••" onkeypress="handleEnter(event)">
+            <button class="btn-login" onclick="checkLogin()">Access Dashboard</button>
+            <div id="loginError">❌ Incorrect Password. Please try again!</div>
         </div>
     </div>
 
-    <!-- ================= TAB 2: ADMIN MANAGEMENT ================= -->
-    <div id="adminTab" class="tab-content">
-        <div class="admin-grid">
-            
-            <!-- Card 1: Set Active Subject -->
-            <div class="admin-card">
-                <div class="admin-title" style="color: var(--primary);">📡 Set Active Subject (Scanner)</div>
-                <div class="input-group">
-                    <label>Select Subject</label>
-                    <select id="hardwareClass"><option value="" disabled selected>⏳ Fetching subjects...</option></select>
-                </div>
-                <button class="btn btn-refresh btn-block" id="btnSetHardware" onclick="setActiveHardwareClass()">Update Device Subject</button>
-                <div class="status-msg" id="hardwareStatus"></div>
+    <!-- ================= MAIN APP (HIDDEN UNTIL LOGIN) ================= -->
+    <div id="mainApp">
+        <button class="btn btn-logout" onclick="logout()">🚪 Logout</button>
+        
+        <div class="header">
+            <h1>📊 Unified System Dashboard <span class="badge-pro">PRO</span></h1>
+            <p>Intelligent Attendance & Device Management Platform</p>
+        </div>
+
+        <!-- TABS NAVIGATION -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('dashboardTab', this)">📊 Dashboard Analytics</button>
+            <button class="tab-btn" onclick="switchTab('adminTab', this)">⚙️ Device Management</button>
+        </div>
+
+        <!-- TAB 1: DASHBOARD -->
+        <div id="dashboardTab" class="tab-content active">
+            <div class="kpi-container">
+                <div class="kpi-card"><div class="kpi-title">Total Scanned</div><div class="kpi-value" id="kpiTotal">0</div></div>
+                <div class="kpi-card"><div class="kpi-title">On Time</div><div class="kpi-value" id="kpiOnTime" style="color: var(--success);">0</div></div>
+                <div class="kpi-card"><div class="kpi-title">Late</div><div class="kpi-value" id="kpiLate" style="color: var(--warning);">0</div></div>
+                <div class="kpi-card"><div class="kpi-title">Early Check-Out</div><div class="kpi-value" id="kpiCheckOut" style="color: var(--info);">0</div></div>
             </div>
 
-            <!-- Card 2: Add New Subject -->
-            <div class="admin-card">
-                <div class="admin-title" style="color: var(--info);">📚 Add New Subject</div>
-                <div class="input-group">
-                    <label>Subject Name</label>
-                    <input type="text" id="newClassName" placeholder="e.g. Mathematics 101">
+            <div class="controls-container">
+                <div class="filter-group">
+                    <div class="date-box"><input type="date" id="dateFilter" onchange="filterTable()"></div>
+                    <div class="search-box"><input type="text" id="searchInput" placeholder="🔍 Search student or subject..." onkeyup="filterTable()"></div>
                 </div>
-                <button class="btn btn-refresh btn-block" style="background-color: var(--info);" id="btnAddClass" onclick="addNewClass()">Save to Database</button>
-                <div class="status-msg" id="classStatus"></div>
+                
+                <div class="action-group">
+                    <button class="btn btn-refresh" onclick="loadData()">🔄 Refresh</button>
+                    <button class="btn btn-excel" onclick="exportToExcel()">📥 Export CSV</button>
+                    <button class="btn btn-sheet" onclick="openGoogleSheet()">📝 Edit in Sheets</button>
+                </div>
             </div>
 
-            <!-- Card 3: Enroll Fingerprint -->
-            <div class="admin-card enroll-card" style="grid-column: 1 / -1;">
-                <div class="admin-title" style="color: var(--success);">➕ Enroll New Fingerprint</div>
-                <div class="row-group">
-                    <div class="input-group" style="flex: 1;">
-                        <label>Academic Year</label>
-                        <select id="newYear"><option value="Year 1">Year 1</option><option value="Year 2">Year 2</option><option value="Year 3" selected>Year 3</option><option value="Year 4">Year 4</option></select>
-                    </div>
-                    <div class="input-group" style="flex: 1;">
-                        <label>Group</label>
-                        <select id="newGroup"><option value="B.EcE.A" selected>B.EcE.A</option><option value="B.EcE.B">B.EcE.B</option><option value="B.EcE.C">B.EcE.C</option></select>
-                    </div>
-                    <div class="input-group" style="flex: 1;">
-                        <label>Fingerprint ID (1-127)</label>
-                        <input type="number" id="newId" placeholder="e.g. 1">
-                    </div>
-                    <div class="input-group" style="flex: 2;">
-                        <label>Full Name</label>
-                        <input type="text" id="newName" placeholder="Student Name">
-                    </div>
-                </div>
-                <button class="btn btn-success btn-block" id="btnEnroll" onclick="startEnrollment()">Start Hardware Enrollment</button>
-                <div class="status-msg" id="enrollStatus"></div>
+            <div class="loading-container" id="loadingView">
+                <div class="spinner"></div>
+                <p style="color: var(--primary); font-weight: 600;">Fetching data from Cloud Database...</p>
             </div>
 
-            <!-- Card 4: Delete Fingerprint -->
-            <div class="admin-card delete-card">
-                <div class="admin-title" style="color: var(--danger);">🗑️ Delete Fingerprint</div>
-                <div class="input-group">
-                    <label>Fingerprint ID to Remove</label>
-                    <input type="number" id="deleteId" placeholder="Enter ID (1-127)">
+            <div class="table-card" id="tableView">
+                <div class="table-responsive">
+                    <table id="attendanceTable">
+                        <thead>
+                            <tr><th>Date</th><th>Time</th><th>Student Name</th><th>Subject</th><th style="text-align: center;">Status</th><th>Method</th></tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
                 </div>
-                <button class="btn btn-danger btn-block" onclick="startDelete()">Send Delete Command</button>
-                <div class="status-msg" id="deleteStatus"></div>
             </div>
+        </div>
 
+        <!-- TAB 2: ADMIN MANAGEMENT -->
+        <div id="adminTab" class="tab-content">
+            <div class="admin-grid">
+                <div class="admin-card">
+                    <div class="admin-title" style="color: var(--primary);">📡 Set Active Subject (Scanner)</div>
+                    <div class="input-group">
+                        <label>Select Subject</label>
+                        <select id="hardwareClass"><option value="" disabled selected>⏳ Fetching subjects...</option></select>
+                    </div>
+                    <button class="btn btn-refresh btn-block" id="btnSetHardware" onclick="setActiveHardwareClass()">Update Device Subject</button>
+                    <div class="status-msg" id="hardwareStatus"></div>
+                </div>
+
+                <div class="admin-card">
+                    <div class="admin-title" style="color: var(--info);">📚 Add New Subject</div>
+                    <div class="input-group">
+                        <label>Subject Name</label>
+                        <input type="text" id="newClassName" placeholder="e.g. Mathematics 101">
+                    </div>
+                    <button class="btn btn-refresh btn-block" style="background-color: var(--info);" id="btnAddClass" onclick="addNewClass()">Save to Database</button>
+                    <div class="status-msg" id="classStatus"></div>
+                </div>
+
+                <div class="admin-card enroll-card" style="grid-column: 1 / -1;">
+                    <div class="admin-title" style="color: var(--success);">➕ Enroll New Fingerprint</div>
+                    <div class="row-group">
+                        <div class="input-group" style="flex: 1;">
+                            <label>Academic Year</label>
+                            <select id="newYear"><option value="Year 1">Year 1</option><option value="Year 2">Year 2</option><option value="Year 3" selected>Year 3</option><option value="Year 4">Year 4</option></select>
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label>Group</label>
+                            <select id="newGroup"><option value="B.EcE.A" selected>B.EcE.A</option><option value="B.EcE.B">B.EcE.B</option><option value="B.EcE.C">B.EcE.C</option></select>
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label>Fingerprint ID (1-127)</label>
+                            <input type="number" id="newId" placeholder="e.g. 1">
+                        </div>
+                        <div class="input-group" style="flex: 2;">
+                            <label>Full Name</label>
+                            <input type="text" id="newName" placeholder="Student Name">
+                        </div>
+                    </div>
+                    <button class="btn btn-success btn-block" id="btnEnroll" onclick="startEnrollment()">Start Hardware Enrollment</button>
+                    <div class="status-msg" id="enrollStatus"></div>
+                </div>
+
+                <div class="admin-card delete-card">
+                    <div class="admin-title" style="color: var(--danger);">🗑️ Delete Fingerprint</div>
+                    <div class="input-group">
+                        <label>Fingerprint ID to Remove</label>
+                        <input type="number" id="deleteId" placeholder="Enter ID (1-127)">
+                    </div>
+                    <button class="btn btn-danger btn-block" onclick="startDelete()">Send Delete Command</button>
+                    <div class="status-msg" id="deleteStatus"></div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // ================= SECURITY & LOGIN LOGIC =================
+        // 🟢 បងអាចប្តូរលេខសម្ងាត់ (Password) នៅត្រង់នេះ 🟢
+        const SYSTEM_PASSWORD = "1122"; 
+        
+        // ពិនិត្យមើលថាតើធ្លាប់ Login ហើយឬនៅ ពេលបើកវិបសាយ
+        window.onload = function() {
+            if (sessionStorage.getItem("isLoggedIn") === "true") {
+                showMainApp();
+            }
+        };
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') { checkLogin(); }
+        }
+
+        function checkLogin() {
+            let pass = document.getElementById("sysPassword").value;
+            if (pass === SYSTEM_PASSWORD) {
+                sessionStorage.setItem("isLoggedIn", "true"); // រក្សាទុកការ Login 
+                showMainApp();
+            } else {
+                document.getElementById("loginError").style.display = "block";
+            }
+        }
+
+        function showMainApp() {
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("mainApp").style.display = "block";
+            
+            // ពេល Login ចូល ទើបទាញទិន្នន័យ (ចំណេញល្បឿនអ៊ីនធឺណិត)
+            loadData();
+            fetchClasses();
+        }
+
+        function logout() {
+            sessionStorage.removeItem("isLoggedIn");
+            location.reload(); // Refresh ទំព័រ ដើម្បីលោតទៅផ្ទាំង Login វិញ
+        }
+
         // ================= ការកំណត់ Link ទាំង ២ =================
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby39WkYdxnf64jL95NiO5_2fu4XbgwA_a2O63i4O_SzKRa5gC9aZqSvLsaFBFYZGxIcow/exec";
         const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1vz3PxJqXReHt4jZiLYojqcwg52AeKy6gEyxmTCtEIJ8/edit?usp=sharing"; 
         
-        // MQTT Connection
         const mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
 
-        // Tab Switching Logic
         function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -260,16 +308,7 @@
             btn.classList.add('active');
         }
 
-        // Initialize Data on Load
-        window.onload = function() {
-            loadData();
-            fetchClasses();
-        };
-
-        // ================= DASHBOARD FUNCTIONS =================
-        function openGoogleSheet() {
-            window.open(GOOGLE_SHEET_URL, '_blank');
-        }
+        function openGoogleSheet() { window.open(GOOGLE_SHEET_URL, '_blank'); }
 
         function loadData() {
             document.getElementById('loadingView').style.display = 'block';
@@ -364,7 +403,6 @@
             document.body.appendChild(downloadLink); downloadLink.click(); document.body.removeChild(downloadLink);
         }
 
-        // ================= ADMIN FUNCTIONS =================
         function fetchClasses() {
             var classDropdown = document.getElementById("hardwareClass");
             fetch(GOOGLE_SCRIPT_URL + "?action=getClasses")
